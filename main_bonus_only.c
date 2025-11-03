@@ -1,175 +1,283 @@
 #include "libft.h"
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define GREEN "\033[32m"
 #define RED "\033[31m"
-#define BLUE "\033[34m"
-#define YELLOW "\033[33m"
 #define RESET "\033[0m"
-#define BOLD "\033[1m"
 
-#define PASS GREEN"✓ PASS"RESET
-#define FAIL RED"✗ FAIL"RESET
-#define INFO BLUE"ℹ INFO"RESET
+static int tests_passed = 0;
+static int tests_failed = 0;
 
-void print_list(t_list *lst, const char *name)
+void print_result(const char *test_name, int passed)
 {
-    printf("   %s: ", name);
-    if (!lst) {
-        printf("(empty)\n");
-        return;
-    }
-    
-    int count = 0;
-    while (lst && count < 5) { // Limite pour éviter boucles infinies
-        printf("\"%s\"", (char *)lst->content);
-        lst = lst->next;
-        if (lst) printf(" -> ");
-        count++;
-    }
-    if (lst) printf(" -> ...");
-    printf("\n");
+	if (passed)
+	{
+		tests_passed++;
+		printf("%s✓ PASS%s %s\n", GREEN, RESET, test_name);
+	}
+	else
+	{
+		tests_failed++;
+		printf("%s✗ FAIL%s %s\n", RED, RESET, test_name);
+	}
 }
 
+// Helper function to free content
 void del_content(void *content)
 {
-    free(content);
+	free(content);
 }
 
-void print_content(void *content)
-{
-    printf("   Processing: \"%s\"\n", (char *)content);
-}
-
+// Helper function for ft_lstmap
 void *duplicate_content(void *content)
 {
-    return strdup((char *)content);
+	char *str = (char *)content;
+	return strdup(str);
+}
+
+// Helper function for ft_lstiter
+void print_content(void *content)
+{
+	// Just to test iteration, we don't actually print in tests
+	(void)content;
+}
+
+void test_lstnew(void)
+{
+	printf("\n=== ft_lstnew ===\n");
+	
+	char *content = strdup("Hello");
+	t_list *node = ft_lstnew(content);
+	
+	int ok = (node != NULL && node->content == content && node->next == NULL);
+	print_result("ft_lstnew creates node with correct content and NULL next", ok);
+	
+	free(content);
+	free(node);
+	
+	t_list *node_null = ft_lstnew(NULL);
+	ok = (node_null != NULL && node_null->content == NULL && node_null->next == NULL);
+	print_result("ft_lstnew with NULL content", ok);
+	free(node_null);
+}
+
+void test_lstadd_front(void)
+{
+	printf("\n=== ft_lstadd_front ===\n");
+	
+	t_list *lst = NULL;
+	t_list *node1 = ft_lstnew(strdup("First"));
+	t_list *node2 = ft_lstnew(strdup("Second"));
+	
+	ft_lstadd_front(&lst, node1);
+	int ok = (lst == node1);
+	print_result("ft_lstadd_front to empty list", ok);
+	
+	ft_lstadd_front(&lst, node2);
+	ok = (lst == node2 && lst->next == node1);
+	print_result("ft_lstadd_front to existing list", ok);
+	
+	free((char *)node1->content);
+	free((char *)node2->content);
+	free(node1);
+	free(node2);
+}
+
+void test_lstsize(void)
+{
+	printf("\n=== ft_lstsize ===\n");
+	
+	t_list *lst = NULL;
+	print_result("ft_lstsize of NULL list is 0", ft_lstsize(lst) == 0);
+	
+	t_list *node1 = ft_lstnew(strdup("1"));
+	t_list *node2 = ft_lstnew(strdup("2"));
+	t_list *node3 = ft_lstnew(strdup("3"));
+	
+	lst = node1;
+	node1->next = node2;
+	node2->next = node3;
+	
+	print_result("ft_lstsize of 3-element list is 3", ft_lstsize(lst) == 3);
+	
+	free((char *)node1->content);
+	free((char *)node2->content);
+	free((char *)node3->content);
+	free(node1);
+	free(node2);
+	free(node3);
+}
+
+void test_lstlast(void)
+{
+	printf("\n=== ft_lstlast ===\n");
+	
+	t_list *lst = NULL;
+	print_result("ft_lstlast of NULL list is NULL", ft_lstlast(lst) == NULL);
+	
+	t_list *node1 = ft_lstnew(strdup("1"));
+	t_list *node2 = ft_lstnew(strdup("2"));
+	t_list *node3 = ft_lstnew(strdup("3"));
+	
+	lst = node1;
+	print_result("ft_lstlast of single element", ft_lstlast(lst) == node1);
+	
+	node1->next = node2;
+	node2->next = node3;
+	
+	print_result("ft_lstlast returns last element", ft_lstlast(lst) == node3);
+	
+	free((char *)node1->content);
+	free((char *)node2->content);
+	free((char *)node3->content);
+	free(node1);
+	free(node2);
+	free(node3);
+}
+
+void test_lstadd_back(void)
+{
+	printf("\n=== ft_lstadd_back ===\n");
+	
+	t_list *lst = NULL;
+	t_list *node1 = ft_lstnew(strdup("First"));
+	
+	ft_lstadd_back(&lst, node1);
+	int ok = (lst == node1);
+	print_result("ft_lstadd_back to empty list", ok);
+	
+	t_list *node2 = ft_lstnew(strdup("Second"));
+	ft_lstadd_back(&lst, node2);
+	ok = (lst == node1 && node1->next == node2 && node2->next == NULL);
+	print_result("ft_lstadd_back to existing list", ok);
+	
+	t_list *node3 = ft_lstnew(strdup("Third"));
+	ft_lstadd_back(&lst, node3);
+	ok = (node2->next == node3 && node3->next == NULL);
+	print_result("ft_lstadd_back adds to end", ok);
+	
+	free((char *)node1->content);
+	free((char *)node2->content);
+	free((char *)node3->content);
+	free(node1);
+	free(node2);
+	free(node3);
+}
+
+void test_lstdelone(void)
+{
+	printf("\n=== ft_lstdelone ===\n");
+	
+	char *content = strdup("Delete me");
+	t_list *node = ft_lstnew(content);
+	
+	ft_lstdelone(node, del_content);
+	print_result("ft_lstdelone deletes node (no crash)", 1);
+}
+
+void test_lstclear(void)
+{
+	printf("\n=== ft_lstclear ===\n");
+	
+	t_list *node1 = ft_lstnew(strdup("1"));
+	t_list *node2 = ft_lstnew(strdup("2"));
+	t_list *node3 = ft_lstnew(strdup("3"));
+	
+	node1->next = node2;
+	node2->next = node3;
+	
+	t_list *lst = node1;
+	ft_lstclear(&lst, del_content);
+	
+	print_result("ft_lstclear clears list and sets to NULL", lst == NULL);
+	
+	// Test with NULL list
+	t_list *null_lst = NULL;
+	ft_lstclear(&null_lst, del_content);
+	print_result("ft_lstclear with NULL list (no crash)", 1);
+}
+
+void test_lstiter(void)
+{
+	printf("\n=== ft_lstiter ===\n");
+	
+	t_list *node1 = ft_lstnew(strdup("1"));
+	t_list *node2 = ft_lstnew(strdup("2"));
+	t_list *node3 = ft_lstnew(strdup("3"));
+	
+	node1->next = node2;
+	node2->next = node3;
+	
+	ft_lstiter(node1, print_content);
+	print_result("ft_lstiter iterates without crash", 1);
+	
+	ft_lstclear(&node1, del_content);
+}
+
+void test_lstmap(void)
+{
+	printf("\n=== ft_lstmap ===\n");
+	
+	t_list *node1 = ft_lstnew(strdup("one"));
+	t_list *node2 = ft_lstnew(strdup("two"));
+	t_list *node3 = ft_lstnew(strdup("three"));
+	
+	node1->next = node2;
+	node2->next = node3;
+	
+	t_list *new_list = ft_lstmap(node1, duplicate_content, del_content);
+	
+	int ok = (new_list != NULL && 
+		new_list != node1 &&
+		new_list->content != node1->content &&
+		strcmp((char *)new_list->content, "one") == 0);
+	print_result("ft_lstmap creates new list with mapped content", ok);
+	
+	if (new_list)
+	{
+		ok = (new_list->next != NULL &&
+			strcmp((char *)new_list->next->content, "two") == 0 &&
+			new_list->next->next != NULL &&
+			strcmp((char *)new_list->next->next->content, "three") == 0);
+		print_result("ft_lstmap preserves list structure", ok);
+		
+		ft_lstclear(&new_list, del_content);
+	}
+	
+	ft_lstclear(&node1, del_content);
+	
+	// Test with NULL list
+	t_list *null_result = ft_lstmap(NULL, duplicate_content, del_content);
+	print_result("ft_lstmap with NULL list returns NULL", null_result == NULL);
 }
 
 int main(void)
 {
-    printf(BOLD GREEN "==========================================\n");
-    printf("       TESTS LIBFT - FONCTIONS BONUS\n");
-    printf("        (Gestion listes chaînées)\n");
-    printf("==========================================" RESET "\n\n");
-
-    // Test ft_lstnew
-    printf(BOLD BLUE "=== TEST FT_LSTNEW ===" RESET "\n");
-    t_list *node1 = ft_lstnew(strdup("First"));
-    printf("ft_lstnew(\"First\"): %s\n", node1 ? PASS : FAIL);
-    if (node1) {
-        printf("   Content: \"%s\", Next: %s\n", 
-               (char *)node1->content, 
-               node1->next ? "NOT NULL" : "NULL");
-    }
-
-    // Test ft_lstadd_front
-    printf("\n" BOLD BLUE "=== TEST FT_LSTADD_FRONT ===" RESET "\n");
-    t_list *list = NULL;
-    ft_lstadd_front(&list, node1);
-    printf("ft_lstadd_front (first element): %s\n", list ? PASS : FAIL);
-    print_list(list, "List");
-
-    t_list *node2 = ft_lstnew(strdup("Second"));
-    ft_lstadd_front(&list, node2);
-    printf("ft_lstadd_front (second element): %s\n", 
-           (list && list == node2) ? PASS : FAIL);
-    print_list(list, "List");
-
-    // Test ft_lstsize
-    printf("\n" BOLD BLUE "=== TEST FT_LSTSIZE ===" RESET "\n");
-    int size = ft_lstsize(list);
-    printf("ft_lstsize: %s (size: %d, expected: 2)\n", 
-           (size == 2) ? PASS : FAIL, size);
-
-    // Test ft_lstlast
-    printf("\n" BOLD BLUE "=== TEST FT_LSTLAST ===" RESET "\n");
-    t_list *last = ft_lstlast(list);
-    printf("ft_lstlast: %s\n", 
-           (last && last == node1) ? PASS : FAIL);
-    if (last) {
-        printf("   Last content: \"%s\"\n", (char *)last->content);
-    }
-
-    // Test ft_lstadd_back
-    printf("\n" BOLD BLUE "=== TEST FT_LSTADD_BACK ===" RESET "\n");
-    t_list *node3 = ft_lstnew(strdup("Third"));
-    ft_lstadd_back(&list, node3);
-    printf("ft_lstadd_back: %s (size should be 3)\n", 
-           (ft_lstsize(list) == 3) ? PASS : FAIL);
-    print_list(list, "List");
-
-    // Test avec liste vide
-    t_list *empty_list = NULL;
-    t_list *node_for_empty = ft_lstnew(strdup("OnlyOne"));
-    ft_lstadd_back(&empty_list, node_for_empty);
-    printf("ft_lstadd_back (empty list): %s\n", 
-           (empty_list == node_for_empty) ? PASS : FAIL);
-
-    // Test ft_lstiter
-    printf("\n" BOLD BLUE "=== TEST FT_LSTITER ===" RESET "\n");
-    printf("ft_lstiter (printing each element):\n");
-    ft_lstiter(list, print_content);
-    printf("ft_lstiter: %s\n", INFO);
-
-    // Test ft_lstmap
-    printf("\n" BOLD BLUE "=== TEST FT_LSTMAP ===" RESET "\n");
-    t_list *mapped_list = ft_lstmap(list, duplicate_content, del_content);
-    printf("ft_lstmap: %s (created new list)\n", mapped_list ? PASS : FAIL);
-    if (mapped_list) {
-        printf("   Original size: %d, Mapped size: %d\n", 
-               ft_lstsize(list), ft_lstsize(mapped_list));
-        print_list(mapped_list, "Mapped");
-    }
-
-    // Test ft_lstmap avec liste vide
-    t_list *empty_mapped = ft_lstmap(NULL, duplicate_content, del_content);
-    printf("ft_lstmap (empty list): %s (should be NULL)\n", 
-           !empty_mapped ? PASS : FAIL);
-
-    // Test ft_lstdelone
-    printf("\n" BOLD BLUE "=== TEST FT_LSTDELONE ===" RESET "\n");
-    t_list *to_delete = ft_lstnew(strdup("ToDelete"));
-    printf("Created node to delete: %s\n", to_delete ? PASS : FAIL);
-    ft_lstdelone(to_delete, del_content);
-    printf("ft_lstdelone: %s (node deleted)\n", INFO);
-
-    // Test ft_lstclear
-    printf("\n" BOLD BLUE "=== TEST FT_LSTCLEAR ===" RESET "\n");
-    printf("Before clear - List size: %d\n", ft_lstsize(list));
-    ft_lstclear(&list, del_content);
-    printf("ft_lstclear: %s (list cleared)\n", !list ? PASS : FAIL);
-    printf("After clear - List pointer: %s\n", !list ? "NULL" : "NOT NULL");
-
-    if (mapped_list) {
-        ft_lstclear(&mapped_list, del_content);
-    }
-    if (empty_list) {
-        ft_lstclear(&empty_list, del_content);
-    }
-
-    // Tests de cas limites
-    printf("\n" BOLD YELLOW "=== TESTS CAS LIMITES ===" RESET "\n");
-    printf("ft_lstsize(NULL): %d %s\n", ft_lstsize(NULL), 
-           (ft_lstsize(NULL) == 0) ? PASS : FAIL);
-    printf("ft_lstlast(NULL): %s\n", 
-           !ft_lstlast(NULL) ? PASS : FAIL);
-    
-    // Test avec un seul élément
-    t_list *single = ft_lstnew(strdup("Single"));
-    printf("Single element list size: %d %s\n", ft_lstsize(single), 
-           (ft_lstsize(single) == 1) ? PASS : FAIL);
-    printf("Single element is last: %s\n", 
-           (ft_lstlast(single) == single) ? PASS : FAIL);
-    ft_lstclear(&single, del_content);
-
-    printf("\n" BOLD GREEN "==========================================\n");
-    printf("            TESTS BONUS TERMINÉS\n");
-    printf("==========================================" RESET "\n");
-    printf("%s Toutes les fonctions de listes testées !\n", INFO);
-    printf("%s Gestion mémoire et pointeurs vérifiée.\n", INFO);
-
-    return 0;
+	printf("\n");
+	printf("╔════════════════════════════════════════╗\n");
+	printf("║     LIBFT BONUS TESTER (Lists)        ║\n");
+	printf("╚════════════════════════════════════════╝\n");
+	
+	test_lstnew();
+	test_lstadd_front();
+	test_lstsize();
+	test_lstlast();
+	test_lstadd_back();
+	test_lstdelone();
+	test_lstclear();
+	test_lstiter();
+	test_lstmap();
+	
+	printf("\n");
+	printf("╔════════════════════════════════════════╗\n");
+	printf("║            TEST SUMMARY                ║\n");
+	printf("╠════════════════════════════════════════╣\n");
+	printf("║  %sPassed: %2d%s                           ║\n", GREEN, tests_passed, RESET);
+	printf("║  %sFailed: %2d%s                           ║\n", RED, tests_failed, RESET);
+	printf("╚════════════════════════════════════════╝\n");
+	printf("\n");
+	
+	return (tests_failed == 0) ? 0 : 1;
 }
